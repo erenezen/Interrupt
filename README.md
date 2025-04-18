@@ -1,4 +1,4 @@
-# Interrupt
+#PicoBlaze Interrupts 
 
 In this assignment, the goal is to:
 
