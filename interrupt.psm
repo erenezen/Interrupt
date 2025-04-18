@@ -1,0 +1,43 @@
+#ifDef proc::xPblze6
+
+			#set proc::xPblze6::scrpdSize,				64						; [64, 128, 256]
+			#set proc::xPblze6::clkFreq,				100000000				; in Hz
+			
+			#set IOdev::BRAM0::en,						TRUE
+			#set IOdev::BRAM0::type,					mem
+			#set IOdev::BRAM0::size,					4096
+			
+			#set instmem::pageSize,						4096
+			#set instmem::pageCount,					1
+			#set instmem::sharedMemLocation,			loMem	; [ hiMem, loMem ]
+			
+			#set IOdev::BRAM0::value,					instMem
+			
+			#set IOdev::BRAM0::vhdlEn,					TRUE
+			#set IOdev::BRAM0::vhdlEntityName,			"BRAM0"
+			#set IOdev::BRAM0::vhdlTmplFile,			"ROM_form.vhd"
+			#set IOdev::BRAM0::vhdlTargetFile,			"BRAM0.vhd"
+		#endIf
+	#ORG 0x000
+    LOAD s0, 00           ; counter
+    LOAD s1, 01           ; increment value
+    LOAD s2, 05           ; threshold
+    INT ENABLE            
+loop:
+    ADD s0, s1            
+    COMP s0, s2        
+    JUMP Z, interrupt_signal  ; If counter=5 jump send interrupt signal
+    JUMP loop        ; else continue counting
+interrupt_signal:            
+    WRPRT 0x80, 0x00         ; writing 128(10000000) out port to trigger interrupt
+    JUMP loop       
+; Interrupt Vector
+	#ORG 0x7FF
+    JUMP ISR ; Interrupt service routine
+ISR:
+    LOAD s0, 00         
+    WRPRT s0, 00          ; Clear interrupt signal
+    RETI ENABLE     
+
+
+

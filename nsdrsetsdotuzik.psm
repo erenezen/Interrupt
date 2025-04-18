@@ -1,0 +1,42 @@
+	#ifDef proc::xPblze6
+
+			#set proc::xPblze6::scrpdSize,				64						; [64, 128, 256]
+			#set proc::xPblze6::clkFreq,				100000000				; in Hz
+			
+			#set IOdev::BRAM0::en,						TRUE
+			#set IOdev::BRAM0::type,					mem
+			#set IOdev::BRAM0::size,					4096
+			
+			#set instmem::pageSize,						4096
+			#set instmem::pageCount,					1
+			#set instmem::sharedMemLocation,			loMem	; [ hiMem, loMem ]
+			
+			#set IOdev::BRAM0::value,					instMem
+			
+			#set IOdev::BRAM0::vhdlEn,					TRUE
+			#set IOdev::BRAM0::vhdlEntityName,			"BRAM0"
+			#set IOdev::BRAM0::vhdlTmplFile,			"ROM_form.vhd"
+			#set IOdev::BRAM0::vhdlTargetFile,			"BRAM0.vhd"
+		#endIf
+	#ORG 0x000
+    LOAD s0, 00           ; Interrupt counter
+    LOAD s1, 32           ; number of interrupts
+    INT ENABLE           
+loop:
+    WRPRT 0x80, 00          ; Write to I/O port 0x00 to trigger interrupt
+    JUMP loop   
+; Interrupt Vector
+	#ORG 0x7FF
+    JUMP ISR ; Interrupt Service Routine
+ISR:
+    ADD s0, 01            
+    COMP s0, s1           
+    JUMP Z, EXIT_nested   ; If max nested interrupt level reached exit 
+    INT ENABLE            ; Re-enable interrupts for nesting
+    WRPRT 0x80, 00          
+    RETI ENABLE           
+EXIT_nested:
+    ; Reset and clear interrupt once nesting is complete
+    LOAD s0, 00        
+    WRPRT s0, 00          
+    RETI ENABLE   
